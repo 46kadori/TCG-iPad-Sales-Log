@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>TCG Sales</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f3ee; --surface: #ffffff; --surface2: #eeece7;
+    --border: rgba(0,0,0,0.1); --border-strong: rgba(0,0,0,0.2);
+    --text: #1a1a18; --text-muted: #6b6960; --text-faint: #a8a49c;
+    --btn-hover: #eeece7; --danger: #c0392b; --danger-bg: #fdf0ee;
+    --full-bg: #eaf3de; --full-border: #639922; --full-text: #3b6d11;
+    --b2g1-bg: #fef3dc; --b2g1-border: #c98a1a; --b2g1-text: #7a4f00;
+    --bulk-bg: #e6f1fb; --bulk-border: #378add; --bulk-text: #0c447c;
+    --trade-bg: #fbeaf0; --trade-border: #d4537e; --trade-text: #72243e;
+    --buy-bg: #f3eefe; --buy-border: #7c3aed; --buy-text: #4c1d95;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141412; --surface: #1e1d1a; --surface2: #28271f;
+      --border: rgba(255,255,255,0.08); --border-strong: rgba(255,255,255,0.15);
+      --text: #f0ede6; --text-muted: #9e9a91; --text-faint: #5c5a54;
+      --btn-hover: #28271f; --danger: #e05c4a; --danger-bg: #2a1410;
+      --full-bg: #173404; --full-border: #639922; --full-text: #c0dd97;
+      --b2g1-bg: #2e2206; --b2g1-border: #c98a1a; --b2g1-text: #f5c96a;
+      --bulk-bg: #042c53; --bulk-border: #378add; --bulk-text: #b5d4f4;
+      --trade-bg: #4b1528; --trade-border: #d4537e; --trade-text: #f4c0d1;
+      --buy-bg: #2e1a4a; --buy-border: #7c3aed; --buy-text: #c4b5fd;
+    }
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { height: 100%; }
+  body { height: 100dvh; font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); overflow: hidden; }
+  body {
+    display: flex; flex-direction: column;
+    padding-top: env(safe-area-inset-top);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* ══════════════════════
+     TOP zone (flex 66)
+  ══════════════════════ */
+  .top-zone {
+    flex: 66;
+    position: relative;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  .customer-view {
+    position: absolute; inset: 0;
+    background: var(--surface);
+    display: flex; align-items: center; justify-content: center;
+    border-bottom: 1px solid var(--border);
+  }
+  .customer-view.hidden { display: none; }
+
+  .customer-inner {
+    transform: rotate(180deg);
+    text-align: center; width: 100%; padding: 20px;
+  }
+  .customer-total {
+    font-family: 'DM Mono', monospace;
+    font-size: clamp(48px, 14vw, 96px);
+    font-weight: 500; line-height: 1; color: var(--text);
+  }
+  .customer-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--text-faint); margin-top: 10px;
+  }
+
+  /* Seller-facing: no rotation for calc tab */
+  .customer-view.seller-facing .customer-inner { transform: none; }
+
+  /* Buy/Trade customer view */
+  .buytrade-view {
+    position: absolute; inset: 0;
+    background: var(--surface);
+    display: none; align-items: center; justify-content: center;
+    border-bottom: 1px solid var(--border);
+  }
+  .buytrade-view.visible { display: flex; }
+
+  .buytrade-inner {
+    transform: none;
+    width: 100%; padding: 12px 24px;
+    display: flex; flex-direction: column; gap: 10px; align-items: center;
+  }
+
+  .buytrade-market-row {
+    display: flex; flex-direction: column; gap: 2px; align-items: center; width: 100%;
+  }
+
+  .buytrade-offers-row {
+    display: flex; gap: 0; width: 100%;
+  }
+
+  .buytrade-offer {
+    flex: 1; display: flex; flex-direction: column; gap: 4px; align-items: center;
+    padding: 10px 8px; border-radius: 10px;
+  }
+  .buytrade-offer.buy-offer { background: var(--full-bg); border: 1px solid var(--full-border); }
+  .buytrade-offer.trade-offer { background: var(--bulk-bg); border: 1px solid var(--bulk-border); }
+
+  .buytrade-sep {
+    width: 12px; flex-shrink: 0;
+  }
+
+  .buytrade-row {
+    display: flex; flex-direction: column; gap: 2px; align-items: center;
+  }
+  .buytrade-label {
+    font-family: 'DM Mono', monospace; font-size: 11px;
+    letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-faint);
+  }
+  .buytrade-offer .buytrade-label { font-size: 10px; }
+  .buytrade-value {
+    font-family: 'DM Mono', monospace;
+    font-size: clamp(36px, 8vw, 72px);
+    font-weight: 500; line-height: 1; color: var(--text);
+  }
+  .buytrade-offer .buytrade-value { font-size: clamp(30px, 7vw, 60px); }
+  .buytrade-offer.buy-offer .buytrade-value { color: var(--full-text); }
+  .buytrade-offer.trade-offer .buytrade-value { color: var(--bulk-text); }
+  .buytrade-divider {
+    width: 60%; height: 1px; background: var(--border); margin: 0 auto;
+  }
+
+  /* Sheet view (log/stats) */
+  .sheet-view {
+    position: absolute; inset: 0;
+    background: var(--surface);
+    display: none; flex-direction: column;
+    overflow: hidden; border-bottom: 1px solid var(--border);
+  }
+  .sheet-view.visible { display: flex; }
+  .sheet-inner { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+
+  /* ══════════════════════
+     Deal type tabs — full width, between zones
+  ══════════════════════ */
+  .deal-tabs {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    flex-shrink: 0;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    z-index: 10;
+  }
+  .deal-tab {
+    padding: 10px 4px;
+    font-size: 13px;
+    font-weight: 500; text-align: center;
+    cursor: pointer; border: none;
+    background: transparent; color: var(--text-muted);
+    border-bottom: 3px solid transparent;
+    transition: all 0.15s; min-height: unset;
+  }
+  .deal-tab:active { opacity: 0.7; }
+  .deal-tab.active-full  { color: var(--full-text);  border-bottom-color: var(--full-border);  background: var(--full-bg); }
+  .deal-tab.active-bulk  { color: var(--bulk-text);  border-bottom-color: var(--bulk-border);  background: var(--bulk-bg); }
+  .deal-tab.active-b2g1  { color: var(--b2g1-text);  border-bottom-color: var(--b2g1-border);  background: var(--b2g1-bg); }
+  .deal-tab.active-trade { color: var(--trade-text); border-bottom-color: var(--trade-border); background: var(--trade-bg); }
+
+  /* ══════════════════════
+     BOTTOM zone (flex 34)
+  ══════════════════════ */
+  .bottom-zone {
+    flex: 34;
+    display: flex;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  .col-left {
+    flex: 1; display: flex; flex-direction: column;
+    border-right: 1px solid var(--border); overflow: hidden;
+  }
+
+  .col-right {
+    flex: 1; display: flex; flex-direction: column;
+    padding: 5px; gap: 4px; background: var(--bg); overflow: hidden;
+  }
+
+  /* ══════════════════════
+     Context fields
+  ══════════════════════ */
+  .context-zone {
+    flex: 1; padding: 5px; display: flex;
+    flex-direction: column; gap: 4px; overflow: hidden;
+  }
+
+  .input-display { flex: 1; display: flex; flex-direction: column; gap: 5px; }
+
+  .field-row { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+  .field-label {
+    font-family: 'DM Mono', monospace; font-size: 9px;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--text-faint); margin-bottom: 3px; padding-left: 2px; flex-shrink: 0;
+  }
+  .field-box {
+    flex: 1; display: flex; align-items: center; justify-content: flex-end;
+    background: var(--surface); border: 2px solid var(--border-strong);
+    border-radius: 8px; padding: 0 10px; cursor: pointer;
+    transition: border-color 0.15s; min-height: 0; gap: 6px;
+  }
+  .field-box.focused { border-color: var(--bulk-border); }
+  .field-value {
+    font-family: 'DM Mono', monospace;
+    font-size: clamp(18px, 3vw, 28px);
+    font-weight: 500; color: var(--text);
+  }
+  .field-value.placeholder { color: var(--text-faint); opacity: 0.5; }
+  .field-suffix {
+    font-family: 'DM Mono', monospace; font-size: 12px;
+    color: var(--text-faint); flex-shrink: 0;
+  }
+
+  /* Discount row — flat + percent side by side */
+  .disc-row { flex: 1; display: flex; gap: 5px; min-height: 0; }
+  .disc-row .field-row { flex: 1; }
+
+  /* Bulk tiers */
+  .bulk-tiers-grid {
+    flex: 1; display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 5px; min-height: 0;
+  }
+  .tier-box {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 2px; border-radius: 8px;
+    border: 2px solid transparent; cursor: pointer; transition: all 0.15s;
+  }
+  .tier-box-label { font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 500; flex-shrink: 0; }
+  .tier-box-value { font-family: 'DM Mono', monospace; font-size: clamp(16px, 2.5vw, 24px); font-weight: 500; line-height: 1; }
+  .tier-box-value.placeholder { opacity: 0.35; }
+  .tier-box-1 { background: #dbeafe; border-color: #93c5fd; color: #1e3a5f; }
+  .tier-box-2 { background: #dcfce7; border-color: #86efac; color: #14532d; }
+  .tier-box-3 { background: #fef9c3; border-color: #fde047; color: #422006; }
+  .tier-box-4 { background: #ffedd5; border-color: #fdba74; color: #431407; }
+  .tier-box-5 { background: #fee2e2; border-color: #fca5a5; color: #450a0a; }
+  .tier-box-1.focused { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.4); filter: brightness(1.08); }
+  .tier-box-2.focused { border-color: #22c55e; box-shadow: 0 0 0 3px rgba(34,197,94,0.4); filter: brightness(1.08); }
+  .tier-box-3.focused { border-color: #ca8a04; box-shadow: 0 0 0 3px rgba(202,138,4,0.4); filter: brightness(1.08); }
+  .tier-box-4.focused { border-color: #ea580c; box-shadow: 0 0 0 3px rgba(234,88,12,0.4); filter: brightness(1.08); }
+  .tier-box-5.focused { border-color: #ef4444; box-shadow: 0 0 0 3px rgba(239,68,68,0.4); filter: brightness(1.08); }
+  @media (prefers-color-scheme: dark) {
+    .tier-box-1 { background: #1e3a5f; border-color: #3b82f6; color: #bfdbfe; }
+    .tier-box-2 { background: #14532d; border-color: #22c55e; color: #bbf7d0; }
+    .tier-box-3 { background: #422006; border-color: #ca8a04; color: #fef08a; }
+    .tier-box-4 { background: #431407; border-color: #ea580c; color: #fed7aa; }
+    .tier-box-5 { background: #450a0a; border-color: #ef4444; color: #fecaca; }
+  }
+
+  .bulk-total-pill {
+    flex-shrink: 0; display: flex; align-items: center;
+    justify-content: space-between; padding: 4px 10px;
+    background: var(--surface2); border-radius: 6px;
+  }
+  .bulk-total-label { font-family: 'DM Mono', monospace; font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-faint); }
+  .bulk-total-value { font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 500; }
+
+  /* Buy/Trade inputs */
+  .buytrade-inputs { flex: 1; display: flex; flex-direction: column; gap: 5px; }
+
+  /* ══════════════════════
+     Actions strip
+  ══════════════════════ */
+  .actions-strip {
+    flex-shrink: 0; padding: 4px 5px 5px;
+    display: flex; flex-direction: column;
+    gap: 3px; border-top: 1px solid var(--border);
+  }
+  .tab-banner { display: none; align-items: center; justify-content: space-between; padding: 5px 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 7px; gap: 6px; }
+  .tab-banner.visible { display: flex; }
+  .tab-banner-label { font-family: 'DM Mono', monospace; font-size: 9px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
+  .tab-banner-total { font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 500; color: var(--text); }
+  .close-tab-btn { font-size: 11px; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border-strong); background: var(--surface2); color: var(--text); cursor: pointer; min-height: unset; white-space: nowrap; }
+  .close-tab-btn:active { transform: scale(0.97); }
+  .tab-items-mini { display: flex; flex-direction: column; gap: 3px; max-height: 50px; overflow-y: auto; }
+  .tab-item { display: flex; align-items: center; justify-content: space-between; padding: 3px 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 5px; gap: 4px; }
+  .tab-item-left { display: flex; align-items: center; gap: 4px; min-width: 0; flex: 1; flex-wrap: wrap; }
+  .tab-item-right { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+  .tab-item-amount { font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 500; }
+  .tab-item-chip { font-family: 'DM Mono', monospace; font-size: 9px; padding: 1px 4px; border-radius: 3px; background: var(--surface2); border: 1px solid var(--border); color: var(--text-muted); white-space: nowrap; }
+  .tab-item-remove { font-size: 10px; padding: 1px 5px; border: none; background: none; color: var(--text-faint); cursor: pointer; min-height: unset; border-radius: 3px; }
+  .tab-item-remove:active { color: var(--danger); }
+  .action-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .add-btn { padding: 7px 4px; font-size: 12px; font-weight: 500; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); cursor: pointer; min-height: 34px; text-align: center; }
+  .add-btn:active { background: var(--btn-hover); transform: scale(0.98); }
+  .log-btn { padding: 8px 4px; font-size: 12px; font-weight: 500; border-radius: 8px; border: none; background: var(--full-border); color: #ffffff; cursor: pointer; min-height: 36px; text-align: center; }
+  .log-btn:active { opacity: 0.8; transform: scale(0.98); }
+
+  /* ══════════════════════
+     Numpad
+  ══════════════════════ */
+  .numpad {
+    flex: 1; display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px; min-height: 0;
+  }
+  .numpad-key {
+    font-family: 'DM Mono', monospace;
+    font-size: 22px; font-weight: 500;
+    border-radius: 8px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    user-select: none; transition: background 0.1s, transform 0.1s;
+  }
+  .numpad-key:active { background: var(--surface2); transform: scale(0.94); }
+  .numpad-key.key-back { background: var(--surface2); }
+  .numpad-key.key-back:active { background: var(--danger-bg); color: var(--danger); }
+  .numpad-key.key-dot.disabled { opacity: 0.25; pointer-events: none; }
+
+  /* ══════════════════════
+     Bottom toolbar
+  ══════════════════════ */
+  .toolbar {
+    display: flex; align-items: center;
+    border-top: 1px solid var(--border);
+    background: var(--surface); flex-shrink: 0;
+  }
+  .toolbar-tab { flex: 1; padding: 8px 2px; font-family: 'DM Mono', monospace; font-size: 9px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-faint); text-align: center; cursor: pointer; border: none; background: transparent; border-top: 2px solid transparent; transition: all 0.15s; min-height: unset; }
+  .toolbar-tab.active { color: var(--text); border-top-color: var(--text); }
+  .toolbar-tab:active { background: var(--btn-hover); }
+  .toolbar-divider { width: 1px; background: var(--border); align-self: stretch; margin: 5px 0; }
+  .toolbar-btn { font-size: 11px; padding: 5px 8px; border-radius: 6px; border: 1px solid var(--border-strong); background: transparent; color: var(--text-muted); cursor: pointer; min-height: unset; margin: 3px; }
+  .toolbar-btn:active { background: var(--btn-hover); }
+
+  /* ══════════════════════
+     Log / Stats
+  ══════════════════════ */
+  .summary { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; flex: 1; }
+  .stat { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; justify-content: center; }
+  .stat-label { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 6px; }
+  .stat-value { font-family: 'DM Mono', monospace; font-size: clamp(24px, 5vw, 40px); font-weight: 500; color: var(--text); }
+  .stat-sub { font-size: 12px; color: var(--text-faint); margin-top: 4px; }
+  .log-header { display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+  .log-title { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint); }
+  .clear-log-btn { font-size: 12px; padding: 4px 10px; border: none; background: none; color: var(--text-faint); min-height: unset; cursor: pointer; border-radius: 6px; }
+  .clear-log-btn:active { color: var(--danger); background: var(--danger-bg); }
+  .log-list { display: flex; flex-direction: column; gap: 8px; }
+  .log-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; animation: fadeIn 0.15s ease; }
+  .log-item.type-full  { background: var(--full-bg);  border-color: var(--full-border); }
+  .log-item.type-bulk  { background: var(--bulk-bg);  border-color: var(--bulk-border); }
+  .log-item.type-b2g1  { background: var(--b2g1-bg);  border-color: var(--b2g1-border); }
+  .log-item.type-trade { background: var(--trade-bg); border-color: var(--trade-border); }
+  .log-item.type-buy   { background: var(--buy-bg);   border-color: var(--buy-border); }
+  .log-item.type-tab   { background: var(--surface2); border-color: var(--border-strong); }
+
+  /* White text for all colored log items */
+  .log-item.type-full  .log-amount,
+  .log-item.type-full  .log-time,
+  .log-item.type-full  .log-sale-num,
+  .log-item.type-full  .log-note-input,
+  .log-item.type-full  .log-line,
+  .log-item.type-full  .log-line-detail,
+  .log-item.type-full  .delete-btn,
+  .log-item.type-bulk  .log-amount,
+  .log-item.type-bulk  .log-time,
+  .log-item.type-bulk  .log-sale-num,
+  .log-item.type-bulk  .log-note-input,
+  .log-item.type-bulk  .log-line,
+  .log-item.type-bulk  .log-line-detail,
+  .log-item.type-bulk  .delete-btn,
+  .log-item.type-b2g1  .log-amount,
+  .log-item.type-b2g1  .log-time,
+  .log-item.type-b2g1  .log-sale-num,
+  .log-item.type-b2g1  .log-note-input,
+  .log-item.type-b2g1  .log-line,
+  .log-item.type-b2g1  .log-line-detail,
+  .log-item.type-b2g1  .delete-btn,
+  .log-item.type-trade .log-amount,
+  .log-item.type-trade .log-time,
+  .log-item.type-trade .log-sale-num,
+  .log-item.type-trade .log-note-input,
+  .log-item.type-trade .log-line,
+  .log-item.type-trade .log-line-detail,
+  .log-item.type-trade .delete-btn,
+  .log-item.type-buy   .log-amount,
+  .log-item.type-buy   .log-time,
+  .log-item.type-buy   .log-sale-num,
+  .log-item.type-buy   .log-note-input,
+  .log-item.type-buy   .log-line,
+  .log-item.type-buy   .log-line-detail,
+  .log-item.type-buy   .delete-btn {
+    color: rgba(255,255,255,0.9);
+  }
+  .log-item.type-full  .log-note-input::placeholder,
+  .log-item.type-bulk  .log-note-input::placeholder,
+  .log-item.type-b2g1  .log-note-input::placeholder,
+  .log-item.type-trade .log-note-input::placeholder,
+  .log-item.type-buy   .log-note-input::placeholder {
+    color: rgba(255,255,255,0.45);
+  }
+  .log-item-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .log-item-subrow {
+    display: flex; align-items: center; gap: 10px;
+    margin-top: 8px; padding-top: 6px;
+    border-top: 1px solid rgba(255,255,255,0.12);
+    flex-wrap: wrap;
+  }
+  .log-item.type-tab .log-item-subrow { border-top-color: var(--border); }
+  .log-subrow-detail {
+    font-family: 'DM Mono', monospace; font-size: 12px;
+    color: rgba(255,255,255,0.7); flex-shrink: 0;
+  }
+  .log-item.type-tab .log-subrow-detail { color: var(--text-faint); }
+  .log-item-left { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
+  .log-item-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  .log-item-lines { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px; }
+  .log-line { display: flex; align-items: center; justify-content: space-between; font-family: 'DM Mono', monospace; font-size: 13px; color: var(--text-muted); gap: 8px; }
+  .log-line-detail { color: var(--text-faint); flex: 1; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(3px); } to { opacity:1; transform:translateY(0); } }
+  .deal-badge { font-size: 13px; font-weight: 500; padding: 5px 10px; border-radius: 6px; white-space: nowrap; flex-shrink: 0; }
+  .badge-full  { background: var(--full-bg);  color: var(--full-text);  border: 1px solid var(--full-border); }
+  .badge-bulk  { background: var(--bulk-bg);  color: var(--bulk-text);  border: 1px solid var(--bulk-border); }
+  .badge-b2g1  { background: var(--b2g1-bg);  color: var(--b2g1-text);  border: 1px solid var(--b2g1-border); }
+  .badge-trade { background: var(--trade-bg); color: var(--trade-text); border: 1px solid var(--trade-border); }
+  .badge-buy   { background: var(--buy-bg);   color: var(--buy-text);   border: 1px solid var(--buy-border); }
+  .badge-tab   { background: var(--surface2); color: var(--text-muted); border: 1px solid var(--border-strong); }
+  .log-note { font-size: 13px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .log-amount { font-family: 'DM Mono', monospace; font-size: 17px; font-weight: 500; color: var(--text); }
+  .log-time { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--text-faint); }
+  .delete-btn { font-size: 14px; padding: 5px 9px; border: none; background: none; color: var(--text-faint); border-radius: 6px; min-width: 32px; min-height: 32px; cursor: pointer; }
+  .delete-btn:active { color: var(--danger); background: var(--danger-bg); }
+  .empty-log { text-align: center; padding: 3rem 1rem; font-size: 14px; color: var(--text-faint); }
+  .log-note-input {
+    flex: 1; min-width: 0;
+    font-family: 'DM Sans', sans-serif; font-size: 14px;
+    background: transparent; border: none; outline: none;
+    color: var(--text-muted); resize: none; overflow: hidden;
+    height: 22px; line-height: 1.4; padding: 0;
+  }
+  .log-note-input::placeholder { color: var(--text-faint); opacity: 0.5; font-style: italic; }
+
+  .log-sale-num {
+    font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 500;
+    color: var(--text-faint); flex-shrink: 0; min-width: 24px;
+    text-align: right;
+  }
+
+
+</style>
+</head>
+<body>
+
+<!-- TOP 66%: Customer / Sheet zone -->
+<div class="top-zone">
+  <div class="customer-view" id="customer-view">
+    <div class="customer-inner">
+      <div class="customer-total" id="customer-total">$0.00</div>
+      <div class="customer-label" id="customer-label">Your total</div>
+    </div>
+  </div>
+  <div class="buytrade-view" id="buytrade-view">
+    <div class="buytrade-inner">
+      <div class="buytrade-market-row">
+        <div class="buytrade-label">Market value</div>
+        <div class="buytrade-value" id="bt-market-disp">$0.00</div>
+      </div>
+      <div class="buytrade-divider"></div>
+      <div class="buytrade-offers-row">
+        <div class="buytrade-offer buy-offer" onclick="logBuyOffer()" style="cursor:pointer;">
+          <div class="buytrade-label">Buy ▸ Log</div>
+          <div class="buytrade-value" id="bt-buy-disp">$0.00</div>
+        </div>
+        <div class="buytrade-sep"></div>
+        <div class="buytrade-offer trade-offer" onclick="acceptTradeOffer()" style="cursor:pointer;">
+          <div class="buytrade-label">Trade ▸ Fill</div>
+          <div class="buytrade-value" id="bt-trade-disp">$0.00</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="sheet-view" id="sheet-view">
+    <div class="sheet-inner" id="sheet-inner"></div>
+  </div>
+</div>
+
+<!-- Deal type tabs — full width between zones -->
+<div class="deal-tabs" id="deal-tabs-bar">
+  <button class="deal-tab active-full" data-type="full"  onclick="selectDeal('full')">Full</button>
+  <button class="deal-tab"             data-type="bulk"  onclick="selectDeal('bulk')">Bulk</button>
+  <button class="deal-tab"             data-type="b2g1"  onclick="selectDeal('b2g1')">B2G1</button>
+  <button class="deal-tab"             data-type="trade" onclick="selectDeal('trade')">Trade</button>
+</div>
+
+<!-- BOTTOM 34%: Work zone -->
+<div class="bottom-zone">
+
+  <!-- Left: inputs + actions -->
+  <div class="col-left">
+    <div class="context-zone">
+
+      <!-- Full -->
+      <div class="input-display" id="ctx-full">
+        <div class="field-row">
+          <div class="field-label">Amount</div>
+          <div class="field-box focused" id="wrap-amount" onclick="focusField('amount')">
+            <span class="field-value placeholder" id="disp-amount">0.00</span>
+          </div>
+        </div>
+        <div class="disc-row">
+          <div class="field-row">
+            <div class="field-label">Disc $</div>
+            <div class="field-box" id="wrap-discount" onclick="focusField('discount')">
+              <span class="field-value placeholder" id="disp-discount">0.00</span>
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field-label">Disc %</div>
+            <div class="field-box" id="wrap-disc-pct" onclick="focusField('disc-pct')">
+              <span class="field-value placeholder" id="disp-disc-pct">0</span>
+              <span class="field-suffix">%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bulk -->
+      <div class="input-display" id="ctx-bulk" style="display:none">
+        <div class="bulk-tiers-grid">
+          <div class="tier-box tier-box-1 focused" id="tier-box-1" onclick="focusField('t1')"><span class="tier-box-label">$1</span><span class="tier-box-value placeholder" id="disp-t1">0</span></div>
+          <div class="tier-box tier-box-2"          id="tier-box-2" onclick="focusField('t2')"><span class="tier-box-label">$2</span><span class="tier-box-value placeholder" id="disp-t2">0</span></div>
+          <div class="tier-box tier-box-3"          id="tier-box-3" onclick="focusField('t3')"><span class="tier-box-label">$3</span><span class="tier-box-value placeholder" id="disp-t3">0</span></div>
+          <div class="tier-box tier-box-4"          id="tier-box-4" onclick="focusField('t4')"><span class="tier-box-label">$4</span><span class="tier-box-value placeholder" id="disp-t4">0</span></div>
+          <div class="tier-box tier-box-5"          id="tier-box-5" onclick="focusField('t5')"><span class="tier-box-label">$5</span><span class="tier-box-value placeholder" id="disp-t5">0</span></div>
+        </div>
+        <div class="disc-row">
+          <div class="field-row">
+            <div class="field-label">Disc $</div>
+            <div class="field-box" id="wrap-bulk-disc" onclick="focusField('bulk-disc')">
+              <span class="field-value placeholder" id="disp-bulk-disc">0.00</span>
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field-label">Disc %</div>
+            <div class="field-box" id="wrap-bulk-disc-pct" onclick="focusField('bulk-disc-pct')">
+              <span class="field-value placeholder" id="disp-bulk-disc-pct">0</span>
+              <span class="field-suffix">%</span>
+            </div>
+          </div>
+        </div>
+        <div class="bulk-total-pill">
+          <span class="bulk-total-label">Total</span>
+          <span class="bulk-total-value" id="disp-bulk-total">$0.00</span>
+        </div>
+      </div>
+
+      <!-- B2G1 -->
+      <div class="input-display" id="ctx-b2g1" style="display:none">
+        <div class="field-row">
+          <div class="field-label">Amount</div>
+          <div class="field-box focused" id="wrap-b2g1-amount" onclick="focusField('b2g1-amount')">
+            <span class="field-value placeholder" id="disp-b2g1-amount">0.00</span>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field-label">Free card value</div>
+          <div class="field-box" id="wrap-free" onclick="focusField('free')">
+            <span class="field-value placeholder" id="disp-free">0.00</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Trade -->
+      <div class="input-display" id="ctx-trade" style="display:none">
+        <div class="field-row">
+          <div class="field-label">Sale amount</div>
+          <div class="field-box focused" id="wrap-trade-amount" onclick="focusField('trade-amount')">
+            <span class="field-value placeholder" id="disp-trade-amount">0.00</span>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field-label">Trade value given</div>
+          <div class="field-box" id="wrap-trade-given" onclick="focusField('trade-given')">
+            <span class="field-value placeholder" id="disp-trade-given">0.00</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Buy/Trade calculator inputs -->
+      <div class="input-display" id="ctx-buytrade" style="display:none">
+        <div class="field-row">
+          <div class="field-label">Market value</div>
+          <div class="field-box focused" id="wrap-bt-market" onclick="focusField('bt-market')">
+            <span class="field-value placeholder" id="disp-bt-market">0.00</span>
+          </div>
+        </div>
+        <div class="disc-row">
+          <div class="field-row">
+            <div class="field-label">Buy %</div>
+            <div class="field-box" id="wrap-bt-buy" onclick="focusField('bt-buy')">
+              <span class="field-value" id="disp-bt-buy">75</span>
+              <span class="field-suffix">%</span>
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field-label">Trade %</div>
+            <div class="field-box" id="wrap-bt-trade-pct" onclick="focusField('bt-trade-pct')">
+              <span class="field-value" id="disp-bt-trade-pct">80</span>
+              <span class="field-suffix">%</span>
+            </div>
+          </div>
+        </div>
+        <div class="field-row" style="flex:0 0 auto; margin-top:4px;">
+          <button onclick="resetBuyTrade()" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border-strong);background:var(--surface2);color:var(--text-muted);font-family:'DM Mono',monospace;font-size:11px;font-weight:500;letter-spacing:0.08em;cursor:pointer;">RESET</button>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="actions-strip" id="actions-strip">
+      <div class="tab-banner" id="tab-banner">
+        <span class="tab-banner-label">Tab</span>
+        <span class="tab-banner-total" id="tab-banner-total">$0.00</span>
+        <button class="close-tab-btn" onclick="closeTab()">Close tab</button>
+      </div>
+      <div class="tab-items-mini" id="tab-items-list"></div>
+      <div class="action-row">
+        <button class="add-btn" onclick="addToTab()">+ Add to tab</button>
+        <button class="log-btn"  onclick="logSingle()">Log sale</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: Numpad -->
+  <div class="col-right">
+    <div class="numpad">
+      <div class="numpad-key" onclick="numpadPress('7')">7</div>
+      <div class="numpad-key" onclick="numpadPress('8')">8</div>
+      <div class="numpad-key" onclick="numpadPress('9')">9</div>
+      <div class="numpad-key" onclick="numpadPress('4')">4</div>
+      <div class="numpad-key" onclick="numpadPress('5')">5</div>
+      <div class="numpad-key" onclick="numpadPress('6')">6</div>
+      <div class="numpad-key" onclick="numpadPress('1')">1</div>
+      <div class="numpad-key" onclick="numpadPress('2')">2</div>
+      <div class="numpad-key" onclick="numpadPress('3')">3</div>
+      <div class="numpad-key" onclick="numpadPress('0')">0</div>
+      <div class="numpad-key key-dot" id="key-dot" onclick="numpadPress('.')">.</div>
+      <div class="numpad-key key-back" onclick="numpadPress('back')">⌫</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Bottom toolbar -->
+<div class="toolbar">
+  <button class="toolbar-tab active" id="ttab-log"      onclick="switchSheet('log')">Log</button>
+  <button class="toolbar-tab"        id="ttab-stats"    onclick="switchSheet('stats')">Stats</button>
+  <button class="toolbar-tab"        id="ttab-calc"     onclick="switchSheet('calc')">Calc</button>
+  <button class="toolbar-tab"        id="ttab-buytrade" onclick="switchSheet('buytrade')">Buy/Trade</button>
+  <div class="toolbar-divider"></div>
+  <button class="toolbar-btn" onclick="saveJSON()">Save</button>
+  <button class="toolbar-btn" onclick="document.getElementById('load-input').click()">Load</button>
+  <input type="file" id="load-input" accept=".json" style="display:none" onchange="loadJSON(event)">
+</div>
+
+<script>
+  const LS_KEY = 'tcg_iphone_data';
+  let sales=[], openTab=[], currentDeal='full', activeSheet='log';
+
+  const fields = {
+    amount:'', discount:'', 'disc-pct':'',
+    'b2g1-amount':'', free:'',
+    t1:'', t2:'', t3:'', t4:'', t5:'', 'bulk-disc':'', 'bulk-disc-pct':'',
+    'trade-amount':'', 'trade-given':'',
+    'bt-market':'', 'bt-buy':'75', 'bt-trade-pct':'80'
+  };
+
+  const dealDefaultField = { full:'amount', bulk:'t1', b2g1:'b2g1-amount', trade:'trade-amount' };
+  let focusedField = 'amount';
+
+  const fieldDisp = {
+    amount:'disp-amount', discount:'disp-discount', 'disc-pct':'disp-disc-pct',
+    'b2g1-amount':'disp-b2g1-amount', free:'disp-free',
+    t1:'disp-t1', t2:'disp-t2', t3:'disp-t3', t4:'disp-t4', t5:'disp-t5',
+    'bulk-disc':'disp-bulk-disc', 'bulk-disc-pct':'disp-bulk-disc-pct',
+    'trade-amount':'disp-trade-amount', 'trade-given':'disp-trade-given',
+    'bt-market':'disp-bt-market', 'bt-buy':'disp-bt-buy', 'bt-trade-pct':'disp-bt-trade-pct'
+  };
+
+  const fieldWrap = {
+    amount:'wrap-amount', discount:'wrap-discount', 'disc-pct':'wrap-disc-pct',
+    'b2g1-amount':'wrap-b2g1-amount', free:'wrap-free',
+    t1:'tier-box-1', t2:'tier-box-2', t3:'tier-box-3', t4:'tier-box-4', t5:'tier-box-5',
+    'bulk-disc':'wrap-bulk-disc', 'bulk-disc-pct':'wrap-bulk-disc-pct',
+    'trade-amount':'wrap-trade-amount', 'trade-given':'wrap-trade-given',
+    'bt-market':'wrap-bt-market', 'bt-buy':'wrap-bt-buy', 'bt-trade-pct':'wrap-bt-trade-pct'
+  };
+
+  const dealLabels = { full:'Full', bulk:'Bulk', b2g1:'B2G1', trade:'Trade', buy:'Buy' };
+  const isBulkTier = f => ['t1','t2','t3','t4','t5'].includes(f);
+  const isPctField = f => ['disc-pct','bulk-disc-pct','bt-buy','bt-trade-pct'].includes(f);
+
+  function autoSave() { try { localStorage.setItem(LS_KEY, JSON.stringify(sales)); } catch(e) {} }
+  function autoLoad() { try { const r=localStorage.getItem(LS_KEY); if(r) sales=JSON.parse(r); } catch(e) {} }
+
+  function focusField(field) {
+    Object.values(fieldWrap).forEach(id => { const el=document.getElementById(id); if(el) el.classList.remove('focused'); });
+    focusedField=field;
+    const el=document.getElementById(fieldWrap[field]); if(el) el.classList.add('focused');
+    // Disable dot for bulk tiers and pct fields (integers only)
+    document.getElementById('key-dot').classList.toggle('disabled', isBulkTier(field)||isPctField(field));
+  }
+
+  function numpadPress(key) {
+    const f=focusedField;
+    const isInt = isBulkTier(f)||isPctField(f);
+    let val=fields[f]||'';
+    if(key==='back') { val=val.slice(0,-1); }
+    else if(key==='.') { if(isInt||val.includes('.')) return; val=val===''?'0.':val+'.'; }
+    else {
+      if(!isInt&&val.includes('.')) { const p=val.split('.'); if(p[1].length>=2) return; }
+      if(!val.includes('.')&&val.length>=5) return;
+      val+=key;
+    }
+    fields[f]=val;
+    updateFieldDisplay(f);
+    updateCustomerTotal();
+    if(isBulkTier(f)||f==='bulk-disc'||f==='bulk-disc-pct') updateBulkTotalDisplay();
+    if(f.startsWith('bt-')) updateBuyTradeDisplay();
+  }
+
+  function updateFieldDisplay(f) {
+    const el=document.getElementById(fieldDisp[f]); if(!el) return;
+    const val=fields[f];
+    const isInt=isBulkTier(f)||isPctField(f);
+    const empty=!val||val===''||val==='0'||val==='0.';
+    el.textContent=val||(isInt?'0':'0.00');
+    el.classList.toggle('placeholder',empty);
+  }
+
+  function getNum(f) { return parseFloat(fields[f])||0; }
+  function getInt(f) { return parseInt(fields[f])||0; }
+
+  function applyDiscount(gross, flatF, pctF) {
+    const pct = getNum(pctF);
+    const flat = getNum(flatF);
+    if(pct > 0) return Math.max(0, gross - (gross * pct / 100));
+    return Math.max(0, gross - flat);
+  }
+
+  function updateBulkTotalDisplay() {
+    const gross=getInt('t1')+getInt('t2')*2+getInt('t3')*3+getInt('t4')*4+getInt('t5')*5;
+    const net=applyDiscount(gross,'bulk-disc','bulk-disc-pct');
+    const el=document.getElementById('disp-bulk-total'); if(el) el.textContent='$'+net.toFixed(2);
+  }
+
+  function updateBuyTradeDisplay() {
+    const market=getNum('bt-market');
+    const buyPct=getNum('bt-buy');
+    const tradePct=getNum('bt-trade-pct');
+    document.getElementById('bt-market-disp').textContent='$'+market.toFixed(2);
+    document.getElementById('bt-buy-disp').textContent='$'+Math.ceil(market*buyPct/100).toFixed(0);
+    document.getElementById('bt-trade-disp').textContent='$'+Math.ceil(market*tradePct/100).toFixed(0);
+  }
+
+  function stepPct(field, delta) {
+    let val = parseInt(fields[field])||0;
+    val = Math.min(100, Math.max(0, val + delta));
+    fields[field] = String(val);
+    const dispEl = document.getElementById(fieldDisp[field]);
+    if(dispEl) { dispEl.textContent = val; dispEl.classList.remove('placeholder'); }
+    updateBuyTradeDisplay();
+  }
+
+  function logBuyOffer() {
+    const market = getNum('bt-market');
+    const buyPct = getNum('bt-buy');
+    if(!market || !buyPct) return;
+    const buyOffer = Math.ceil(market * buyPct / 100);
+    const now = new Date(), time = now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    sales.unshift({
+      id: Date.now(), type: 'buy', time,
+      amount: buyOffer,
+      market: market,
+      buyPct: buyPct,
+      note: ''
+    });
+    autoSave();
+    if(activeSheet) refreshSheet();
+    // Brief flash feedback
+    const buyDisp = document.getElementById('bt-buy-disp');
+    if(buyDisp) { const orig = buyDisp.style.opacity; buyDisp.style.opacity='0.3'; setTimeout(()=>buyDisp.style.opacity='1',200); }
+  }
+
+  function acceptTradeOffer() {
+    const market = getNum('bt-market');
+    const tradePct = getNum('bt-trade-pct');
+    if(!market || !tradePct) return;
+    const tradeOffer = Math.ceil(market * tradePct / 100);
+    // Navigate to trade tab and pre-fill trade-given
+    switchSheet('calc');
+    selectDeal('trade');
+    fields['trade-given'] = String(tradeOffer);
+    updateFieldDisplay('trade-given');
+    focusField('trade-amount');
+    updateCustomerTotal();
+  }
+
+  function resetBuyTrade() {
+    fields['bt-market'] = ''; fields['bt-buy'] = '75'; fields['bt-trade-pct'] = '80';
+    updateFieldDisplay('bt-market');
+    const buyEl = document.getElementById('disp-bt-buy'); if(buyEl){ buyEl.textContent='75'; buyEl.classList.remove('placeholder'); }
+    const trdEl = document.getElementById('disp-bt-trade-pct'); if(trdEl){ trdEl.textContent='80'; trdEl.classList.remove('placeholder'); }
+    updateBuyTradeDisplay();
+    focusField('bt-market');
+  }
+
+  function updateCustomerTotal() {
+    if(activeSheet==='buytrade') return;
+    let net=0;
+    if(currentDeal==='full') net=applyDiscount(getNum('amount'),'discount','disc-pct');
+    else if(currentDeal==='b2g1') net=getNum('b2g1-amount');
+    else if(currentDeal==='bulk') { const g=getInt('t1')+getInt('t2')*2+getInt('t3')*3+getInt('t4')*4+getInt('t5')*5; net=applyDiscount(g,'bulk-disc','bulk-disc-pct'); }
+    else if(currentDeal==='trade') net=Math.max(0,getNum('trade-amount')-getNum('trade-given'));
+    const tabTotal=openTab.reduce((s,i)=>s+i.amount,0);
+    document.getElementById('customer-total').textContent='$'+(tabTotal+net).toFixed(2);
+    document.getElementById('customer-label').textContent=openTab.length>0?'Tab total':'Your total';
+  }
+
+  function selectDeal(type) {
+    currentDeal=type;
+    document.querySelectorAll('.deal-tab').forEach(b=>{ b.className='deal-tab'; if(b.dataset.type===type) b.classList.add('active-'+type); });
+    ['ctx-full','ctx-bulk','ctx-b2g1','ctx-trade','ctx-buytrade'].forEach(id=>document.getElementById(id).style.display='none');
+    document.getElementById('ctx-'+type).style.display='';
+    focusField(dealDefaultField[type]||type);
+    updateCustomerTotal();
+  }
+
+  function buildItem() {
+    if(currentDeal==='bulk') {
+      const t1=getInt('t1'),t2=getInt('t2'),t3=getInt('t3'),t4=getInt('t4'),t5=getInt('t5');
+      const gross=t1+t2*2+t3*3+t4*4+t5*5; if(!gross) return null;
+      const pct=getNum('bulk-disc-pct'), flat=getNum('bulk-disc');
+      const net=applyDiscount(gross,'bulk-disc','bulk-disc-pct');
+      return {type:'bulk',amount:net,gross,discount:pct>0?gross*pct/100:flat,discPct:pct,tiers:[t1,t2,t3,t4,t5],note:''};
+    } else if(currentDeal==='full') {
+      const amt=getNum('amount'); if(!amt) return null;
+      const pct=getNum('disc-pct'), flat=getNum('discount');
+      const net=applyDiscount(amt,'discount','disc-pct');
+      return {type:'full',amount:net,gross:amt,discount:pct>0?amt*pct/100:flat,discPct:pct,note:''};
+    } else if(currentDeal==='b2g1') {
+      const amt=getNum('b2g1-amount'); if(!amt) return null;
+      return {type:'b2g1',amount:amt,gross:amt,free:getNum('free'),note:''};
+    } else if(currentDeal==='trade') {
+      const amt=getNum('trade-amount'); if(!amt) return null;
+      return {type:'trade',amount:Math.max(0,amt-getNum('trade-given')),gross:amt,tradeGiven:getNum('trade-given'),note:''};
+    }
+    return null;
+  }
+
+  function clearFields() {
+    const map={full:['amount','discount','disc-pct'],bulk:['t1','t2','t3','t4','t5','bulk-disc','bulk-disc-pct'],b2g1:['b2g1-amount','free'],trade:['trade-amount','trade-given']};
+    (map[currentDeal]||[]).forEach(f=>{fields[f]='';updateFieldDisplay(f);});
+    if(currentDeal==='bulk'){const el=document.getElementById('disp-bulk-total');if(el)el.textContent='$0.00';}
+    focusField(dealDefaultField[currentDeal]); updateCustomerTotal();
+  }
+
+  function addToTab() {
+    const item=buildItem(); if(!item) return;
+    item.id=Date.now(); openTab.push(item);
+    clearFields(); renderTabPreview();
+    document.getElementById('tab-banner').classList.add('visible');
+    updateCustomerTotal();
+  }
+
+  function removeFromTab(id) {
+    openTab=openTab.filter(i=>i.id!==id);
+    if(!openTab.length) document.getElementById('tab-banner').classList.remove('visible');
+    renderTabPreview(); updateCustomerTotal();
+  }
+
+  function closeTab() {
+    if(!openTab.length) return;
+    const now=new Date(),time=now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    sales.unshift({id:Date.now(),type:'tab',amount:openTab.reduce((s,i)=>s+i.amount,0),items:[...openTab],time,note:''});
+    openTab=[];
+    document.getElementById('tab-banner').classList.remove('visible');
+    renderTabPreview(); updateCustomerTotal();
+    if(activeSheet) refreshSheet(); autoSave();
+  }
+
+  function logSingle() {
+    const item=buildItem(); if(!item) return;
+    const now=new Date(),time=now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    sales.unshift({...item,id:Date.now(),time});
+    clearFields();
+    if(activeSheet) refreshSheet(); autoSave();
+  }
+
+  function renderTabPreview() {
+    const list=document.getElementById('tab-items-list');
+    const bannerTotal=document.getElementById('tab-banner-total');
+    list.innerHTML='';
+    if(!openTab.length) return;
+    let total=0;
+    openTab.forEach(item=>{
+      total+=item.amount;
+      const row=document.createElement('div'); row.className='tab-item';
+      const left=document.createElement('div'); left.className='tab-item-left';
+      const badge=document.createElement('span'); badge.className='deal-badge badge-'+item.type; badge.style.fontSize='9px'; badge.textContent=dealLabels[item.type];
+      left.appendChild(badge);
+      if(item.type==='bulk'&&item.tiers) {
+        item.tiers.forEach((v,i)=>{ if(!v) return; const chip=document.createElement('span'); chip.className='tab-item-chip'; chip.textContent=v+'\u00d7$'+(i+1); left.appendChild(chip); });
+        if(item.discount>0){const dc=document.createElement('span');dc.className='tab-item-chip';dc.style.cssText='color:var(--danger);border-color:var(--danger);background:var(--danger-bg)';dc.textContent=item.discPct>0?'-'+item.discPct+'%':'\u2212$'+item.discount.toFixed(2);left.appendChild(dc);}
+      }
+      const right=document.createElement('div'); right.className='tab-item-right';
+      const amt=document.createElement('span'); amt.className='tab-item-amount'; amt.textContent='$'+item.amount.toFixed(2);
+      const rem=document.createElement('button'); rem.className='tab-item-remove'; rem.textContent='\u2715';
+      const iid=item.id; rem.onclick=()=>removeFromTab(iid);
+      right.appendChild(amt); right.appendChild(rem);
+      row.appendChild(left); row.appendChild(right); list.appendChild(row);
+    });
+    bannerTotal.textContent='$'+total.toFixed(2);
+  }
+
+  function switchSheet(tab) {
+    activeSheet=tab;
+    ['log','stats','calc','buytrade'].forEach(t=>{
+      document.getElementById('ttab-'+t).classList.toggle('active',t===tab);
+    });
+
+    // Show/hide customer vs sheet vs buytrade view
+    const isBT = tab==='buytrade';
+    const isCalc = tab==='calc';
+    document.getElementById('customer-view').classList.toggle('hidden', isBT||(!isCalc&&tab!=='calc'));
+    document.getElementById('buytrade-view').classList.toggle('visible', isBT);
+    document.getElementById('sheet-view').classList.toggle('visible', !isBT&&tab!=='calc');
+
+    // Show/hide deal tabs and bottom actions (hide for buytrade)
+    const showEntry = !isBT;
+    document.getElementById('deal-tabs-bar').style.display = showEntry ? '' : 'none';
+    document.getElementById('actions-strip').style.display = showEntry ? '' : 'none';
+
+    // Show buytrade inputs or deal inputs
+    ['ctx-full','ctx-bulk','ctx-b2g1','ctx-trade','ctx-buytrade'].forEach(id=>document.getElementById(id).style.display='none');
+    if(isBT) {
+      document.getElementById('ctx-buytrade').style.display='';
+      // Ensure defaults are shown
+      const buyEl=document.getElementById('disp-bt-buy'); if(buyEl){buyEl.textContent=fields['bt-buy']||'75';buyEl.classList.remove('placeholder');}
+      const trdEl=document.getElementById('disp-bt-trade-pct'); if(trdEl){trdEl.textContent=fields['bt-trade-pct']||'80';trdEl.classList.remove('placeholder');}
+      focusField('bt-market');
+      updateBuyTradeDisplay();
+    } else {
+      document.getElementById('ctx-'+currentDeal).style.display='';
+      focusField(dealDefaultField[currentDeal]);
+    }
+
+    if(tab==='calc') {
+      document.getElementById('customer-view').classList.remove('hidden');
+      document.getElementById('sheet-view').classList.remove('visible');
+      document.getElementById('customer-view').classList.add('seller-facing');
+      updateCustomerTotal();
+    } else if(!isBT) {
+      refreshSheet();
+    }
+  }
+
+  function refreshSheet() {
+    if(activeSheet==='calc'||activeSheet==='buytrade') return;
+    const inner=document.getElementById('sheet-inner');
+    inner.innerHTML='';
+    if(activeSheet==='log') {
+      const header=document.createElement('div'); header.className='log-header';
+      const title=document.createElement('span'); title.className='log-title'; title.textContent='Sales log';
+      const clr=document.createElement('button'); clr.className='clear-log-btn'; clr.textContent='Clear all'; clr.onclick=clearAll;
+      header.appendChild(title); header.appendChild(clr); inner.appendChild(header);
+      const list=document.createElement('div'); list.className='log-list'; inner.appendChild(list);
+      if(!sales.length){const e=document.createElement('div');e.className='empty-log';e.textContent='No sales logged yet.';list.appendChild(e);}
+      else sales.forEach((sale, saleIdx)=>{
+        const saleNum = sales.length - saleIdx;
+        const item=document.createElement('div'); item.className='log-item type-'+(sale.type==='tab'?'tab':sale.type);
+
+        // Line 1: number + badge + amount + time + delete
+        const hdr=document.createElement('div'); hdr.className='log-item-header';
+        const left=document.createElement('div'); left.className='log-item-left';
+        const numEl=document.createElement('span'); numEl.className='log-sale-num'; numEl.textContent='#'+saleNum;
+        const badge=document.createElement('span'); badge.className='deal-badge '+(sale.type==='tab'?'badge-tab':'badge-'+sale.type);
+        badge.textContent=sale.type==='tab'?'Tab':dealLabels[sale.type]||sale.type.toUpperCase();
+        left.appendChild(numEl); left.appendChild(badge);
+        const right=document.createElement('div'); right.className='log-item-right';
+        const amtEl=document.createElement('span'); amtEl.className='log-amount'; amtEl.textContent='$'+sale.amount.toFixed(2); right.appendChild(amtEl);
+        const timeEl=document.createElement('span'); timeEl.className='log-time'; timeEl.textContent=sale.time; right.appendChild(timeEl);
+        const delBtn=document.createElement('button'); delBtn.className='delete-btn'; delBtn.textContent='✕';
+        delBtn.onclick=()=>{sales=sales.filter(s=>s.id!==sale.id);autoSave();refreshSheet();}; right.appendChild(delBtn);
+        hdr.appendChild(left); hdr.appendChild(right); item.appendChild(hdr);
+
+        // Line 2: contextual detail + note input
+        const subrow=document.createElement('div'); subrow.className='log-item-subrow';
+
+        // Contextual detail for line 2
+        if(sale.type==='b2g1'&&sale.free>0){
+          const d=document.createElement('span'); d.className='log-subrow-detail'; d.textContent='−$'+sale.free.toFixed(2)+' free'; subrow.appendChild(d);
+        }
+        if(sale.type==='trade'&&sale.tradeGiven>0){
+          const d=document.createElement('span'); d.className='log-subrow-detail'; d.textContent='−$'+sale.tradeGiven.toFixed(2)+' given'; subrow.appendChild(d);
+        }
+        if((sale.type==='full'||sale.type==='bulk')&&sale.discount>0){
+          const d=document.createElement('span'); d.className='log-subrow-detail'; d.textContent=sale.discPct>0?'-'+sale.discPct+'%':'−$'+sale.discount.toFixed(2)+' disc'; subrow.appendChild(d);
+        }
+        if(sale.type==='buy'&&sale.market){
+          const d=document.createElement('span'); d.className='log-subrow-detail'; d.textContent='market $'+sale.market.toFixed(2)+' · '+sale.buyPct+'%'; subrow.appendChild(d);
+        }
+        if(sale.type==='tab'&&sale.items){
+          const d=document.createElement('span'); d.className='log-subrow-detail'; d.textContent=sale.items.length+' items'; subrow.appendChild(d);
+        }
+        if(sale.type==='bulk'&&sale.tiers){
+          const d=document.createElement('span'); d.className='log-subrow-detail'; d.textContent=sale.tiers.map((v,i)=>v?v+'×$'+(i+1):'').filter(Boolean).join(' '); subrow.appendChild(d);
+        }
+
+        // Note input always on line 2
+        const noteInp=document.createElement('textarea');
+        noteInp.className='log-note-input';
+        noteInp.placeholder='add note…';
+        noteInp.value=sale.note||'';
+        noteInp.onclick=e=>e.stopPropagation();
+        noteInp.oninput=()=>{ sale.note=noteInp.value; autoSave(); };
+        subrow.appendChild(noteInp);
+        item.appendChild(subrow);
+
+        list.appendChild(item);
+      });
+    } else if(activeSheet==='stats') {
+      const allItems=[];
+      sales.forEach(s=>{if(s.type==='tab'&&s.items) s.items.forEach(i=>allItems.push(i)); else allItems.push(s);});
+      const trades=allItems.filter(s=>s.type==='trade');
+      const tradeNet=trades.reduce((s,i)=>s+(i.amount-(i.tradeGiven||0)),0);
+      const nonTrade=allItems.filter(s=>s.type!=='trade'&&s.type!=='buy').reduce((s,i)=>s+i.amount,0);
+      const revenue=nonTrade+tradeNet;
+      const freeTotal=allItems.filter(s=>s.type==='b2g1').reduce((s,i)=>s+(i.free||0),0);
+      const b2g1Count=allItems.filter(s=>s.type==='b2g1').length;
+      const fullSales=allItems.filter(s=>s.type==='full');
+      const statsDiv=document.createElement('div');
+      statsDiv.className='summary';
+      statsDiv.style.cssText='flex:1;';
+      statsDiv.innerHTML=`
+        <div class="stat"><div class="stat-label">Total revenue</div><div class="stat-value">$${revenue.toFixed(2)}</div><div class="stat-sub">${sales.length} transaction${sales.length===1?'':'s'}</div></div>
+        <div class="stat"><div class="stat-label">Free cards given</div><div class="stat-value">$${freeTotal.toFixed(2)}</div><div class="stat-sub">${b2g1Count} B2G1 deal${b2g1Count===1?'':'s'}</div></div>
+        <div class="stat"><div class="stat-label">Full price</div><div class="stat-value">$${fullSales.reduce((s,i)=>s+i.amount,0).toFixed(2)}</div><div class="stat-sub">${fullSales.length} sale${fullSales.length===1?'':'s'}</div></div>
+        <div class="stat"><div class="stat-label">Trades</div><div class="stat-value">${trades.length}</div><div class="stat-sub">$${tradeNet.toFixed(2)} net</div></div>`;
+      inner.style.cssText='flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;';
+      inner.appendChild(statsDiv);
+    }
+  }
+
+  function clearAll() {
+    if(!confirm('Clear all sales and cached data? This cannot be undone.')) return;
+    sales = [];
+    openTab = [];
+    try { localStorage.removeItem(LS_KEY); } catch(e) {}
+    const banner = document.getElementById('tab-banner');
+    if(banner) banner.classList.remove('visible');
+    const tabList = document.getElementById('tab-items-list');
+    if(tabList) tabList.innerHTML = '';
+    updateCustomerTotal();
+    refreshSheet();
+  }
+
+  function saveJSON() {
+    const blob=new Blob([JSON.stringify({sales},null,2)],{type:'application/json'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='tcg_ipadvert.json'; a.click(); URL.revokeObjectURL(a.href);
+  }
+
+  function loadJSON(event) {
+    const file=event.target.files[0]; if(!file) return;
+    const reader=new FileReader();
+    reader.onload=e=>{try{const d=JSON.parse(e.target.result);sales=d.sales||[];if(activeSheet)refreshSheet();autoSave();}catch{alert("Could not read that file.");}};
+    reader.readAsText(file); event.target.value='';
+  }
+
+  autoLoad(); switchSheet('log');
+</script>
+</body>
+</html>
